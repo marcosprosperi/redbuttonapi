@@ -171,6 +171,7 @@ __webpack_require__.r(__webpack_exports__);
 
 const redButtonRoute = Object(express__WEBPACK_IMPORTED_MODULE_0__["Router"])();
 const games = [];
+const arrayLetters = ["A", "B", "C", "D", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z"];
 redButtonRoute.post("/", (req, res) => {
   if (req.body) {}
 });
@@ -179,7 +180,7 @@ redButtonRoute.post("/create", (req, res) => {
     let code;
 
     do {
-      code = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 4);
+      code = [...Array(4)].reduce(out => `${out}${arrayLetters[Math.floor(Math.random() * arrayLetters.length)]}`, "");
     } while (games.find(x => x.code === code));
 
     let newGame = {
