@@ -13,6 +13,8 @@ redButtonRoute.post("/", (req, res) => {
 })
 
 redButtonRoute.post("/create", cors(), (req, res) => {
+    console.log('create...')
+    /*
     if (req.body) {
         let code
         do {
@@ -22,6 +24,8 @@ redButtonRoute.post("/create", cors(), (req, res) => {
         games.push(newGame)
         res.json(newGame)
     }
+    */
+   res.json(200)
 });
 
 
