@@ -18,7 +18,7 @@ app.use(function(req, res, next) {
 });
 app.use(cors())
 
-
+var port = process.env.PORT || 8080;
 
 
 app.post('/pusher/auth', function(req, res) {
@@ -37,4 +37,6 @@ app.get("/", (req, res) => {
 
 configureRoute(app)
 
-app.listen(80)
+app.listen(port, function() {
+  console.log('Our app is running on http://localhost:' + port);
+});
