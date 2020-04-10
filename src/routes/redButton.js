@@ -59,7 +59,7 @@ redButtonRoute.post("/check", (req, res) => {
     }
 })
 
-redButtonRoute.post("/lock", async (req, res) => {
+redButtonRoute.post("/lock", (req, res) => {
     if (req.body) {
         if(req.body.code && req.body.id && games.find(x => x.code === req.body.code)) 
         {
@@ -69,9 +69,12 @@ redButtonRoute.post("/lock", async (req, res) => {
             games[indexGame].players[indexPlayer].locked = true
             games[indexGame].players[indexPlayer].avatar = req.body.avatar
             let channel = `${req.body.code}-lock`
-            await channels_client.trigger('private-channel-manco', channel , games[indexGame].players[indexPlayer])
+            channels_client.trigger('private-channel-manco', channel , games[indexGame].players[indexPlayer], function(error) {
+                console.log('console.log error: ', error)
+                res.json(games[indexGame].players[indexPlayer])
+            })
             console.log(games[indexGame].players[indexPlayer])
-            res.json(games[indexGame].players[indexPlayer])
+           
         } else {
             res.sendStatus(400)
         }
