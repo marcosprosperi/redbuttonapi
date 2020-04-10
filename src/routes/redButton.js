@@ -1,5 +1,6 @@
 import { Router } from "express"
 import channels_client from "../services/pusher"
+import cors from 'cors'
 
 const redButtonRoute = Router()
 const games = []
@@ -11,7 +12,7 @@ redButtonRoute.post("/", (req, res) => {
   }
 })
 
-redButtonRoute.post("/create", (req, res) => {
+redButtonRoute.post("/create", cors(), (req, res) => {
     if (req.body) {
         let code
         do {
