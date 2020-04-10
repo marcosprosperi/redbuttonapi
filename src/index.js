@@ -32,4 +32,4 @@ app.get("/", (req, res) => {
 
 configureRoute(app)
 
-app.listen(3001)
+app.listen(80)
