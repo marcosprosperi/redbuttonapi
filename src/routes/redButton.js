@@ -1,6 +1,5 @@
 import { Router } from "express"
 import channels_client from "../services/pusher"
-
 const redButtonRoute = Router()
 const games = []
 const arrayLetters = "123456789abcdefghijklmnpqrstuvwxyz".split("")
@@ -38,8 +37,11 @@ redButtonRoute.post("/join", (req, res) => {
             games.splice(indexGame, 1, game)
             let channel = `${req.body.code}-join`
             console.log(channel)
-            channels_client.trigger('private-channel-manco', channel , newPlayer)
-            res.json(game)
+            channels_client.trigger('private-channel-manco', channel , newPlayer , function (error) {
+                res.json(game)
+                console.log('Join error: ', error)
+            })
+            
         } else {
             res.sendStatus(400)
         }

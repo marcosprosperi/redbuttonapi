@@ -115,11 +115,12 @@ __webpack_require__.r(__webpack_exports__);
 
 dotenv__WEBPACK_IMPORTED_MODULE_0___default.a.config();
 const app = express__WEBPACK_IMPORTED_MODULE_1___default()();
+app.use(cors__WEBPACK_IMPORTED_MODULE_5___default()());
 app.use(body_parser__WEBPACK_IMPORTED_MODULE_2___default.a.json());
 app.use(body_parser__WEBPACK_IMPORTED_MODULE_2___default.a.urlencoded({
   extended: false
 }));
-app.use(cors__WEBPACK_IMPORTED_MODULE_5___default()());
+var port = process.env.PORT || 8080;
 app.post('/pusher/auth', function (req, res) {
   var socketId = req.body.socket_id;
   var channel = req.body.channel_name;
@@ -132,7 +133,9 @@ app.get("/", (req, res) => {
   }
 });
 Object(_routes__WEBPACK_IMPORTED_MODULE_3__["default"])(app);
-app.listen(3001);
+app.listen(port, function () {
+  console.log('Our app is running on ' + port);
+});
 
 /***/ }),
 
@@ -166,6 +169,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var express__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(express__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _services_pusher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../services/pusher */ "./src/services/pusher.js");
 
+
+
+const zlib = __webpack_require__(/*! zlib */ "zlib");
 
 const redButtonRoute = Object(express__WEBPACK_IMPORTED_MODULE_0__["Router"])();
 const games = [];
@@ -237,9 +243,21 @@ redButtonRoute.post("/lock", (req, res) => {
       games[indexGame].players[indexPlayer].locked = true;
       games[indexGame].players[indexPlayer].avatar = req.body.avatar;
       let channel = `${req.body.code}-lock`;
-      _services_pusher__WEBPACK_IMPORTED_MODULE_1__["default"].trigger('private-channel-manco', channel, games[indexGame].players[indexPlayer]);
+
+      try {
+        let asd2 = games[indexGame].players[indexPlayer].avatar.toDataURL();
+        let asd = zlib.inflateSync(Buffer.from(games[indexGame].players[indexPlayer].avatar.toDataURL(), 'base64')); //let asd = zlib.createGzip(games[indexGame].players[indexPlayer])
+
+        console.log(asd2);
+      } catch (error) {
+        console.log('error trying zip...', error);
+      }
+
+      _services_pusher__WEBPACK_IMPORTED_MODULE_1__["default"].trigger('private-channel-manco', channel, games[indexGame].players[indexPlayer], function (error) {
+        console.log('console.log error: ', error);
+        res.json(games[indexGame].players[indexPlayer]);
+      });
       console.log(games[indexGame].players[indexPlayer]);
-      res.json(games[indexGame].players[indexPlayer]);
     } else {
       res.sendStatus(400);
     }
@@ -347,6 +365,17 @@ module.exports = require("express");
 /***/ (function(module, exports) {
 
 module.exports = require("pusher");
+
+/***/ }),
+
+/***/ "zlib":
+/*!***********************!*\
+  !*** external "zlib" ***!
+  \***********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("zlib");
 
 /***/ })
 
