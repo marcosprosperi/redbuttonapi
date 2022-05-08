@@ -107,6 +107,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_pusher__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./services/pusher */ "./src/services/pusher.js");
 /* harmony import */ var cors__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! cors */ "cors");
 /* harmony import */ var cors__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(cors__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _services_socketio__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./services/socketio */ "./src/services/socketio.js");
+
 
 
 
@@ -120,7 +122,11 @@ app.use(body_parser__WEBPACK_IMPORTED_MODULE_2___default.a.json());
 app.use(body_parser__WEBPACK_IMPORTED_MODULE_2___default.a.urlencoded({
   extended: false
 }));
+const io = Object(_services_socketio__WEBPACK_IMPORTED_MODULE_6__["default"])(app);
 var port = process.env.PORT || 8080;
+io.on('connection', socket => {
+  console.log('a user connected');
+});
 app.post('/pusher/auth', function (req, res) {
   var socketId = req.body.socket_id;
   var channel = req.body.channel_name;
@@ -170,11 +176,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_pusher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../services/pusher */ "./src/services/pusher.js");
 
 
-
-const zlib = __webpack_require__(/*! zlib */ "zlib");
-
 const redButtonRoute = Object(express__WEBPACK_IMPORTED_MODULE_0__["Router"])();
-const games = [];
+const lobbies = [];
 const arrayLetters = "123456789abcdefghijklmnpqrstuvwxyz".split("");
 redButtonRoute.post("/", (req, res) => {
   if (req.body) {}
@@ -185,25 +188,31 @@ redButtonRoute.post("/create", (req, res) => {
 
     do {
       code = [...Array(4)].reduce(out => `${out}${arrayLetters[Math.floor(Math.random() * arrayLetters.length)]}`, "").toUpperCase();
-    } while (games.find(x => x.code === code));
+    } while (lobbies.find(x => x.code === code));
 
     let newGame = {
       code: code,
       channel: `client-a51cab9aff9db0953aa8-${code}`,
       players: []
     };
-    games.push(newGame);
+    lobbies.push(newGame);
     res.json(newGame);
   }
 });
 redButtonRoute.post("/join", (req, res) => {
   if (req.body) {
-    let game = games.find(x => x.code === req.body.code);
+    let game = lobbies.find(x => x.code === req.body.code);
     console.log(req.body);
+    console.log('game: ', game);
 
-    if (req.body.code && req.body.playerName && games.find(x => x.code === req.body.code)) {
-      let game = games.find(x => x.code === req.body.code);
-      let indexGame = games.findIndex(x => x.game === req.body.code);
+    if (game === undefined) {
+      res.status(500).send('La sala no existe');
+      return;
+    }
+
+    if (req.body.code && req.body.playerName && game) {
+      let game = lobbies.find(x => x.code === req.body.code);
+      let indexGame = lobbies.findIndex(x => x.game === req.body.code);
       let newPlayer = {
         id: parseInt(game.players.length + 1),
         playerName: req.body.playerName,
@@ -212,10 +221,9 @@ redButtonRoute.post("/join", (req, res) => {
       };
       game.players.push(newPlayer);
       console.log(newPlayer);
-      games.splice(indexGame, 1, game);
+      lobbies.splice(indexGame, 1, game);
       let channel = `${req.body.code}-join`;
       console.log(channel);
-      _services_pusher__WEBPACK_IMPORTED_MODULE_1__["default"].trigger('private-channel-manco', channel, newPlayer);
       res.json(game);
     } else {
       res.sendStatus(400);
@@ -226,8 +234,8 @@ redButtonRoute.post("/check", (req, res) => {
   console.log(req.body);
 
   if (req.body) {
-    if (req.body.code && games.find(x => x.code === req.body.code)) {
-      let game = games.find(x => x.code === req.body.code);
+    if (req.body.code && lobbies.find(x => x.code === req.body.code)) {
+      let game = lobbies.find(x => x.code === req.body.code);
       res.json(game);
     } else {
       res.sendStatus(400);
@@ -236,28 +244,18 @@ redButtonRoute.post("/check", (req, res) => {
 });
 redButtonRoute.post("/lock", (req, res) => {
   if (req.body) {
-    if (req.body.code && req.body.id && games.find(x => x.code === req.body.code)) {
-      let game = games.find(x => x.code === req.body.code);
+    if (req.body.code && req.body.id && lobbies.find(x => x.code === req.body.code)) {
+      let game = lobbies.find(x => x.code === req.body.code);
       let indexPlayer = game.players.findIndex(player => player.id === req.body.id);
-      let indexGame = games.findIndex(x => x.code === req.body.code);
-      games[indexGame].players[indexPlayer].locked = true;
-      games[indexGame].players[indexPlayer].avatar = req.body.avatar;
+      let indexGame = lobbies.findIndex(x => x.code === req.body.code);
+      lobbies[indexGame].players[indexPlayer].locked = true;
+      lobbies[indexGame].players[indexPlayer].avatar = req.body.avatar;
       let channel = `${req.body.code}-lock`;
-
-      try {
-        let asd2 = games[indexGame].players[indexPlayer].avatar.toDataURL();
-        let asd = zlib.inflateSync(Buffer.from(games[indexGame].players[indexPlayer].avatar.toDataURL(), 'base64')); //let asd = zlib.createGzip(games[indexGame].players[indexPlayer])
-
-        console.log(asd2);
-      } catch (error) {
-        console.log('error trying zip...', error);
-      }
-
-      _services_pusher__WEBPACK_IMPORTED_MODULE_1__["default"].trigger('private-channel-manco', channel, games[indexGame].players[indexPlayer], function (error) {
+      _services_pusher__WEBPACK_IMPORTED_MODULE_1__["default"].trigger('private-channel-manco', channel, lobbies[indexGame].players[indexPlayer], function (error) {
         console.log('console.log error: ', error);
-        res.json(games[indexGame].players[indexPlayer]);
+        res.json(lobbies[indexGame].players[indexPlayer]);
       });
-      console.log(games[indexGame].players[indexPlayer]);
+      console.log(lobbies[indexGame].players[indexPlayer]);
     } else {
       res.sendStatus(400);
     }
@@ -301,6 +299,30 @@ const channels_client = new Pusher({
 
 /***/ }),
 
+/***/ "./src/services/socketio.js":
+/*!**********************************!*\
+  !*** ./src/services/socketio.js ***!
+  \**********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+const {
+  Server
+} = __webpack_require__(/*! socket.io */ "socket.io");
+
+const http = __webpack_require__(/*! http */ "http");
+
+const initSocketService = app => {
+  const server = http.createServer(app);
+  return new Server(server);
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (initSocketService);
+
+/***/ }),
+
 /***/ 0:
 /*!****************************!*\
   !*** multi ./src/index.js ***!
@@ -308,7 +330,7 @@ const channels_client = new Pusher({
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! C:\Users\Marcos\source\repos\home\button\red-button-backend\src/index.js */"./src/index.js");
+module.exports = __webpack_require__(/*! C:\Users\Marcos\source\repos\home\redbuttonapi\src/index.js */"./src/index.js");
 
 
 /***/ }),
@@ -357,6 +379,17 @@ module.exports = require("express");
 
 /***/ }),
 
+/***/ "http":
+/*!***********************!*\
+  !*** external "http" ***!
+  \***********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("http");
+
+/***/ }),
+
 /***/ "pusher":
 /*!*************************!*\
   !*** external "pusher" ***!
@@ -368,14 +401,14 @@ module.exports = require("pusher");
 
 /***/ }),
 
-/***/ "zlib":
-/*!***********************!*\
-  !*** external "zlib" ***!
-  \***********************/
+/***/ "socket.io":
+/*!****************************!*\
+  !*** external "socket.io" ***!
+  \****************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = require("zlib");
+module.exports = require("socket.io");
 
 /***/ })
 
